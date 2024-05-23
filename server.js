@@ -201,3 +201,77 @@ function addRole() {
       });
   });
 }
+
+function addEmployee() {
+  const sqlRole = `SELECT id, title FROM role`;
+  pool.query(sqlRole, (err, res) => {
+    if (err) {
+      console.error('Error fetching roles:', err);
+      promptUser();
+      return;
+    }
+
+    const roleChoice = res.rows.map(role => ({
+      name: role.title,
+      value: role.id
+    }));
+
+    const sqlEm = `SELECT id, first_name, last_name FROM employee`;
+    pool.query(sqlEm, (err, res) => {
+      if (err) {
+        console.error('Error fetching managers:', err);
+        promptUser();
+        return;
+      }
+
+      const ManagerChoice = res.rows.map(employee => ({
+        name: `${employee.first_name} ${employee.last_name}`,
+        value: employee.id
+      })).concat({ name:"Null", value: null });
+
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            name: "firstName",
+            message: "What is Employee's First Name?"
+          },
+          {
+            type: "input",
+            name: "lastName",
+            message: "What is Employee's Last Name?"
+          },
+          {
+            type: "list",
+            name: "roleId",
+            message: "Input their Role:",
+            choices: roleChoice
+          },
+          {
+            type: "list",
+            name: "managerId",
+            message: "Who is their Manager? (if applicable)",
+            choices: ManagerChoice,
+            default: null
+          }
+        ])
+        .then((answers) => {
+          const sql = `INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)`;
+          const values = [answers.firstName, answers.lastName, answers.roleId, answers.managerId];
+          pool.query(sql, values, (err, res) => {
+            if (err) {
+              console.error('Error adding employee:', err);
+              promptUser();
+              return;
+            }
+            console.log(`${answers.firstName} ${answers.lastName} Added`);
+            promptUser();
+          });
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+          promptUser();
+        });
+    });
+  })
+}
