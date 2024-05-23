@@ -80,7 +80,7 @@ function viewDepartments() {
       res.status(500).json({ error: err.message });
       return;
     }
-    console.log('Departments:');
+    console.log("Departments:");
     console.table(res.rows); // Use console.table to display the rows in a table format
     promptUser();
   });
@@ -95,13 +95,14 @@ function viewRoles() {
       res.status(500).json({ error: err.message });
       return;
     }
-    console.log('Roles:');
+    console.log("Roles:");
     console.table(res.rows);
     promptUser();
   });
 }
 
 function viewEmployees() {
+  // sql syntax that pulls from all tables and joins the data together
   const sql = `SELECT employee.id, employee.first_name, employee.last_name, role.title, name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee
   JOIN role ON role.id = employee.role_id
   JOIN department ON department.id = role.department_id
@@ -112,7 +113,7 @@ function viewEmployees() {
       res.status(500).json({ error: err.message });
       return;
     }
-    console.log('Employees:');
+    console.log("Employees:");
     console.table(res.rows);
     promptUser();
   });
@@ -132,32 +133,36 @@ function addDepartment() {
     ])
     .then((answer) => {
       const sql = `INSERT INTO department(name) VALUES ($1)`;
+      // will insert values that user inputed from inquirer prompt into sql query
       const values = [answer.newDept];
       pool.query(sql, values, (err, res) => {
         if (err) {
-          console.error('Error adding department:', err);
+          console.error("Error adding department:", err);
+          // if error occurs it will push user back to the main prompts
           promptUser();
           return;
         }
         console.log(`Added Department: ${answer.newDept}`,);
+        // user will always be pushed to main prompts when function is done
         promptUser();
       });
     })
     .catch((error) => {
-      console.error('Error:', error);
+      console.error("Error:", error);
       promptUser();
     });
 }
 
 function addRole() {
+  //fetches data from department table
   const sql = `SELECT id, name FROM department`;
   pool.query(sql, (err, res) => {
     if (err) {
-      console.error('Error fetching departments:', err);
+      console.error("Error fetching departments:", err);
       promptUser();
       return;
     }
-
+  // maps the fetched department data into an array to use as choices for the inquirer prompt
     const departmentChoices = res.rows.map(department => ({
       name: department.name,
       value: department.id
@@ -178,7 +183,7 @@ function addRole() {
         {
           type: "list",
           name: "deptId",
-          message: "Enter New Department Name:",
+          message: "Enter Department:",
           choices: departmentChoices
         }
       ])
@@ -187,7 +192,7 @@ function addRole() {
         const values = [answers.newTitle, answers.salary, answers.deptId];
         pool.query(sql, values, (err, res) => {
           if (err) {
-            console.error('Error adding role:', err);
+            console.error("Error adding role:", err);
             promptUser();
             return;
           }
@@ -196,7 +201,7 @@ function addRole() {
         });
       })
       .catch((error) => {
-        console.error('Error:', error);
+        console.error("Error:", error);
         promptUser();
       });
   });
@@ -206,7 +211,7 @@ function addEmployee() {
   const sqlRole = `SELECT id, title FROM role`;
   pool.query(sqlRole, (err, res) => {
     if (err) {
-      console.error('Error fetching roles:', err);
+      console.error("Error fetching roles:", err);
       promptUser();
       return;
     }
@@ -219,7 +224,7 @@ function addEmployee() {
     const sqlEm = `SELECT id, first_name, last_name FROM employee`;
     pool.query(sqlEm, (err, res) => {
       if (err) {
-        console.error('Error fetching managers:', err);
+        console.error("Error fetching managers:", err);
         promptUser();
         return;
       }
@@ -227,7 +232,7 @@ function addEmployee() {
       const ManagerChoice = res.rows.map(employee => ({
         name: `${employee.first_name} ${employee.last_name}`,
         value: employee.id
-      })).concat({ name:"Null", value: null });
+      })).concat({ name: "Null", value: null });
 
       inquirer
         .prompt([
@@ -260,7 +265,7 @@ function addEmployee() {
           const values = [answers.firstName, answers.lastName, answers.roleId, answers.managerId];
           pool.query(sql, values, (err, res) => {
             if (err) {
-              console.error('Error adding employee:', err);
+              console.error("Error adding employee:", err);
               promptUser();
               return;
             }
@@ -269,9 +274,74 @@ function addEmployee() {
           });
         })
         .catch((error) => {
-          console.error('Error:', error);
+          console.error("Error:", error);
           promptUser();
         });
     });
+  })
+}
+
+// ==============================================================================
+  // update employee role function
+  
+function UpdateEmRole() {
+  const sql = `SELECT id, first_name, last_name FROM employee`;
+  pool.query(sql, (err, res) => {
+    if (err) {
+      console.error("Error fetching employees", err);
+      promptUser();
+      return;
+    }
+    const emChoice = res.rows.map(employee => ({
+      name: `${employee.first_name} ${employee.last_name}`,
+      value: employee.id
+    }));
+    const sqlRole = `SELECT id, title FROM role`;
+
+    pool.query(sqlRole, (err, res) => {
+      if (err) {
+        console.error("Error fetching roles:", err);
+        promptUser();
+        return;
+      }
+
+      const roleChoice = res.rows.map(role => ({
+        name: role.title,
+        value: role.id
+      }));
+
+      inquirer
+        .prompt([
+          {
+            type: "list",
+            name: "pickEm",
+            message: "Who would you like to update?",
+            choices: emChoice
+          },
+          {
+            type: "list",
+            name: "newRole",
+            message: "What is their new role?",
+            choices: roleChoice
+          }
+        ])
+        .then((answers) => {
+          const sql = `UPDATE employee SET role_id = $1 WHERE id = $2`;
+          const values = [answers.newRole, answers.pickEm];
+          pool.query(sql, values, (err, res) => {
+            if (err) {
+              console.error("Error adding employee:", err);
+              promptUser();
+              return;
+            }
+            console.log(`Changed role to ${answers.newRole}`);
+            promptUser();
+          });
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          promptUser();
+        });
+    })
   })
 }

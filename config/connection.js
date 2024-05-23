@@ -1,6 +1,6 @@
 const Sequelize = require("sequelize");
 
-//will use this in db connection file
+//keeps sensitive information hidden
 const sequelize = new Sequelize(
     process.env.DB_NAME,
     process.env.DB_USER,
