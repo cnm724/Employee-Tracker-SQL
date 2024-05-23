@@ -20,8 +20,9 @@ This application is solely initialized from the terminal. It gives the user the 
 This application shows my new knowledge on SQL: postgresql, and Sequelizee.js; while also building on my knowledge of previous topics covered.
 
 ## Usage
+Watch Employee Tracker Demo Here:
 [![Watch the video](./assets/demo_thumbnail.png)](https://drive.google.com/file/d/1CQDdp3mVpIn4Rpvf9NH6oNtbGDc6Ilwd/view?usp=sharing)
-
+---
 ![prompts in terminal](./assets/prompts.png)
 ![learned sequelize](./assets/sequelize.png)
 ## License
