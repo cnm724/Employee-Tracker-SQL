@@ -1,5 +1,4 @@
 const express = require("express");
-const sequelize = require("./config/connection");
 const inquirer = require("inquirer");
 const { Pool } = require("pg");
 require("dotenv").config();
@@ -53,10 +52,9 @@ function promptUser() {
           break;
         case "view all employees": viewEmployees();
           break;
-        case "add a department": 
-          addDepartment();
+        case "add a department": addDepartment();
           break;
-        case "add a role": addRoles();
+        case "add a role": addRole();
           break;
         case "add an employee": addEmployee();
           break;
@@ -121,16 +119,85 @@ function viewEmployees() {
 }
 
 // ==============================================================================
+// Functions to get user input to add new/updated data to tables
 
 function addDepartment() {
-  const sql = `INSERT INTO department(name) VALUES (${deptName})`;
-  pool.query(sql, insert, (err, res) => {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "newDept",
+        message: "Enter New Department Name:"
+      }
+    ])
+    .then((answer) => {
+      const sql = `INSERT INTO department(name) VALUES ($1)`;
+      const values = [answer.newDept];
+      pool.query(sql, values, (err, res) => {
+        if (err) {
+          console.error('Error adding department:', err);
+          promptUser();
+          return;
+        }
+        console.log(`Added Department: ${answer.newDept}`,);
+        promptUser();
+      });
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+      promptUser();
+    });
+}
+
+function addRole() {
+  const sql = `SELECT id, name FROM department`;
+  pool.query(sql, (err, res) => {
     if (err) {
-      res.status(500).json({ error: err.message });
+      console.error('Error fetching departments:', err);
+      promptUser();
       return;
     }
-    console.log(`Added ${deptName}`);
-    console.table(res.rows);
-    promptUser();
+
+    const departmentChoices = res.rows.map(department => ({
+      name: department.name,
+      value: department.id
+    }));
+
+    inquirer
+      .prompt([
+        {
+          type: "input",
+          name: "newTitle",
+          message: "Enter New Role Title:"
+        },
+        {
+          type: "input",
+          name: "salary",
+          message: "Enter Role's Salary:"
+        },
+        {
+          type: "list",
+          name: "deptId",
+          message: "Enter New Department Name:",
+          choices: departmentChoices
+        }
+      ])
+      .then((answers) => {
+        const sql = `INSERT INTO role(title, salary, department_id) VALUES ($1, $2, $3)`;
+        const values = [answers.newTitle, answers.salary, answers.deptId];
+        pool.query(sql, values, (err, res) => {
+          if (err) {
+            console.error('Error adding role:', err);
+            promptUser();
+            return;
+          }
+          console.log(`Added Role: ${answers.newTitle}`,);
+          promptUser();
+        });
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        promptUser();
+      });
   });
 }
